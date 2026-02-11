@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.session import engine, Base, get_db
-from app.models import models
-from app.schemas import schemas # Need to create this
+# Remove the problematic models import that might be triggering metadata discovery
+# from app.models import models 
 from app.api.api import api_router
 
 app = FastAPI(title="Fraud Detection & Case Management API")
@@ -14,7 +14,9 @@ app = FastAPI(title="Fraud Detection & Case Management API")
 @app.on_event("startup")
 def startup_event():
     try:
-        models.Base.metadata.create_all(bind=engine)
+        # Import models inside the function to avoid global metadata triggers
+        from app.models.models import Transaction, Alert, Case, CaseNote, Rule
+        Base.metadata.create_all(bind=engine)
     except Exception as e:
         print(f"Error during database initialization: {e}")
         # We don't raise here so the app can at least start, 
