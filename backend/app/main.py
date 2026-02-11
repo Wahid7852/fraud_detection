@@ -30,9 +30,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the Fraud Detection Platform API"}
+@app.get("/api/health")
+def health_check():
+    return {"status": "healthy", "message": "Backend API is running"}
 
 app.include_router(api_router, prefix="/api")
 
