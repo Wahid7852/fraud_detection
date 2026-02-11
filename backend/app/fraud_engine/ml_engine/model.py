@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -27,7 +26,8 @@ class MLEngine:
                 self.model = loaded_data
                 # le_category remains a new instance
 
-    def train(self, data: pd.DataFrame):
+    def train(self, data):
+        import pandas as pd
         # Prepare features
         # Assuming data has: Amount, Category, FraudIndicator
         X = data[['Amount', 'Category']].copy()

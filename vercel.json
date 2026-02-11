@@ -10,8 +10,7 @@
       "use": "@vercel/python",
       "config": {
         "includeFiles": [
-          "backend/app/**",
-          "requirements.txt"
+          "backend/app/**"
         ]
       }
     }
