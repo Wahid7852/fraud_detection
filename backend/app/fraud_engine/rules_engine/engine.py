@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-from ...models.models import Transaction, Rule
+from app.models.models import Transaction, Rule
 
 class RulesEngine:
     def __init__(self, db: Session):

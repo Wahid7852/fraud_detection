@@ -3,10 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
-from .db.session import engine, Base, get_db
-from .models import models
-from .schemas import schemas # Need to create this
-from .api.api import api_router
+from app.db.session import engine, Base, get_db
+from app.models import models
+from app.schemas import schemas # Need to create this
+from app.api.api import api_router
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)

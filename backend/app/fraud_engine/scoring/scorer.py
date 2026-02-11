@@ -1,6 +1,6 @@
-from ..rules_engine.engine import RulesEngine
-from ..ml_engine.model import MLEngine
-from ...models.models import Transaction
+from app.fraud_engine.rules_engine.engine import RulesEngine
+from app.fraud_engine.ml_engine.model import MLEngine
+from app.models.models import Transaction
 from sqlalchemy.orm import Session
 
 class Scorer:

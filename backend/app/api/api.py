@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import dashboard, alerts, cases, rules, transactions
+from app.api.endpoints import dashboard, alerts, cases, rules, transactions
 
 api_router = APIRouter()
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from ...db.session import get_db
-from ...models.models import Transaction, Alert, Case
-from ...schemas.schemas import Transaction as TransactionSchema, TransactionCreate
-from ...fraud_engine.scoring.scorer import Scorer
+from app.db.session import get_db
+from app.models.models import Transaction, Alert, Case
+from app.schemas.schemas import Transaction as TransactionSchema, TransactionCreate
+from app.fraud_engine.scoring.scorer import Scorer
 
 router = APIRouter()
 

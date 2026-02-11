@@ -1,8 +1,8 @@
 import pandas as pd
 import os
 from sqlalchemy.orm import Session
-from ..db.session import engine, Base, SessionLocal
-from ..models.models import Transaction, Alert, Rule
+from app.db.session import engine, Base, SessionLocal
+from app.models.models import Transaction, Alert, Rule
 import datetime
 
 def init_db():

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from ...db.session import get_db
-from ...models.models import Transaction, Alert
-from ...schemas.schemas import DashboardKPIs
+from app.db.session import get_db
+from app.models.models import Transaction, Alert
+from app.schemas.schemas import DashboardKPIs
 
 router = APIRouter()
 
