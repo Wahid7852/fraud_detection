@@ -5,10 +5,7 @@ from typing import List
 from app.db.session import init_db
 from app.api.api import api_router
 
-app = FastAPI(
-    title="Fraud Detection & Case Management API",
-    redirect_slashes=False
-)
+app = FastAPI(title="Fraud Detection & Case Management API")
 
 # Initialize MongoDB with Beanie
 @app.on_event("startup")

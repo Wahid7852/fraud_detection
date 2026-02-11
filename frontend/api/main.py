@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Add the project root and backend directory to sys.path
+# This ensures that 'backend.app.main' or 'app.main' can be found at runtime
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Now api is inside frontend, so root is two levels up
-root_path = os.path.dirname(os.path.dirname(current_dir))
+root_path = os.path.dirname(current_dir)
 backend_path = os.path.join(root_path, "backend")
 
 if root_path not in sys.path:
