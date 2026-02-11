@@ -20,10 +20,5 @@
       "source": "/api/(.*)",
       "destination": "api/index.py"
     }
-  ],
-  "functions": {
-    "api/*.py": {
-      "excludeFiles": "{frontend,node_modules,sources,backend/scripts,backend/tests}/**"
-    }
-  }
+  ]
 }
