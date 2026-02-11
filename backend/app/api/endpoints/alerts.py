@@ -7,8 +7,10 @@ router = APIRouter()
 
 @router.get("/", response_model=List[AlertSchema])
 async def get_alerts(skip: int = 0, limit: int = 100):
-    # Use fetch_links() to include linked Transaction data
-    alerts = await Alert.find_all().skip(skip).limit(limit).fetch_links().to_list()
+    alerts = await Alert.find_all().skip(skip).limit(limit).to_list()
+    # Explicitly fetch links for each alert if needed
+    for alert in alerts:
+        await alert.fetch_links()
     return alerts
 
 @router.get("/{alert_id}", response_model=AlertSchema)

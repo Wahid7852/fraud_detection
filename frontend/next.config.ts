@@ -4,7 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   output: 'standalone',
-  outputFileTracingRoot: require('path').join(__dirname, '../../'),
+  outputFileTracingRoot: require('path').join(__dirname, '../'),
+  transpilePackages: ['lucide-react'],
+  experimental: {
+  },
   async rewrites() {
     return [
       {

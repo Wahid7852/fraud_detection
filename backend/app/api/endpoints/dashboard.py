@@ -9,16 +9,18 @@ async def get_dashboard_kpis():
     total_trans = await Transaction.count()
     fraud_alerts = await Alert.find(Alert.risk_score > 70).count()
     
-    # Calculate total amount using aggregation
-    pipeline_total = [{"$group": {"_id": None, "total": {"$sum": "$amount"}}}]
-    total_amount_res = await Transaction.aggregate(pipeline_total).to_list()
-    total_amount = total_amount_res[0]["total"] if total_amount_res else 0
+    # Calculate total amount
+    total_amount = 0
+    async for trans in Transaction.find_all():
+        total_amount += trans.amount
     
     # In MongoDB/Beanie, joining is done via lookups or separate queries.
     # For now, let's keep it simple or use a manual join if needed.
     # Since we have links, we can find alerts and then get their transaction amounts.
     fraud_amount = 0
-    alerts = await Alert.find(Alert.risk_score > 70).fetch_links().to_list()
+    alerts = await Alert.find(Alert.risk_score > 70).to_list()
+    for alert in alerts:
+        await alert.fetch_links()
     for alert in alerts:
         if alert.transaction:
             fraud_amount += alert.transaction.amount

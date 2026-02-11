@@ -5,7 +5,10 @@ from typing import List
 from app.db.session import init_db
 from app.api.api import api_router
 
-app = FastAPI(title="Fraud Detection & Case Management API")
+app = FastAPI(
+    title="Fraud Detection & Case Management API",
+    redirect_slashes=False
+)
 
 # Initialize MongoDB with Beanie
 @app.on_event("startup")
@@ -23,6 +26,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def read_root():
+    return {
+        "message": "Welcome to the Fraud Detection Platform API",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
 
 @app.get("/api/health")
 def health_check():

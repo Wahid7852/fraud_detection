@@ -7,7 +7,10 @@ router = APIRouter()
 
 @router.get("/", response_model=List[CaseSchema])
 async def get_cases():
-    return await Case.find_all().fetch_links().to_list()
+    cases = await Case.find_all().to_list()
+    for case in cases:
+        await case.fetch_links()
+    return cases
 
 @router.get("/{case_id}", response_model=CaseSchema)
 async def get_case(case_id: str):
