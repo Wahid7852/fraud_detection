@@ -1,0 +1,14 @@
+{
+  "name": "fraud-detection-platform-monorepo",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "cd frontend && npm install && npm run dev",
+    "build": "cd frontend && npm install && npm run build && cp -r .next ../",
+    "start": "cd frontend && npm run start"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}

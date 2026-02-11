@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # Load .env file if it exists
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./fraud_detection.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:////tmp/fraud_detection.db")
 
 # If using PostgreSQL (common for Vercel/managed DBs), fix the URL prefix if necessary
 if DATABASE_URL.startswith("postgres://"):

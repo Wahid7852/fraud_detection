@@ -1,9 +1,17 @@
 import sys
 import os
+import traceback
 from dotenv import load_dotenv
 
 # Load .env file
 load_dotenv()
+
+# Check for DATABASE_URL (for debugging)
+db_url = os.getenv("DATABASE_URL")
+if db_url:
+    print(f"DATABASE_URL is set (starts with {db_url[:10]}...)")
+else:
+    print("DATABASE_URL is NOT set, using fallback /tmp/fraud_detection.db")
 
 # Add the project root and backend directory to sys.path
 # This ensures that 'backend.app.main' or 'app.main' can be found at runtime
@@ -20,15 +28,29 @@ if backend_path not in sys.path:
 # We use a robust import strategy to handle both Vercel and local environments
 try:
     # Try importing from the project root (standard Vercel/local behavior)
-    from backend.app.main import app
-except ImportError:
-    # Fallback for environments where 'backend' is the root or sys.path is different
-    # We use a type ignore here because the linter cannot trace the sys.path modification above
+    from backend.app.main import app as backend_app
+    app = backend_app
+except Exception as e:
+    print(f"Primary import failed: {e}")
+    print(traceback.format_exc())
     try:
-        from app.main import app # type: ignore
-    except ImportError as e:
-        print(f"Failed to import FastAPI app: {e}")
-        raise
+        # Fallback for environments where 'backend' is the root or sys.path is different
+        from app.main import app as fallback_app # type: ignore
+        app = fallback_app
+    except Exception as e2:
+        print(f"Secondary import failed: {e2}")
+        print(traceback.format_exc())
+        
+        # Create a minimal app as a final fallback to show the error
+        from fastapi import FastAPI
+        app = FastAPI()
+        @app.get("/api/health")
+        def health():
+            return {"status": "error", "error": str(e2), "traceback": traceback.format_exc()}
+        
+        @app.get("/api/{full_path:path}")
+        def catch_all(full_path: str):
+            return {"error": "Backend import failed", "details": str(e2)}
 
 # Ensure 'app' is explicitly available for Vercel's handler detection
 app = app

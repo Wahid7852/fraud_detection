@@ -8,12 +8,18 @@ from app.models import models
 from app.schemas import schemas # Need to create this
 from app.api.api import api_router
 
-# Create tables
-models.Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="Fraud Detection & Case Management API")
 
-# Set up CORS
+# Create tables (moved to startup event for better reliability)
+@app.on_event("startup")
+def startup_event():
+    try:
+        models.Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"Error during database initialization: {e}")
+        # We don't raise here so the app can at least start, 
+        # but subsequent DB calls will fail with descriptive errors.
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # In production, replace with specific origins
