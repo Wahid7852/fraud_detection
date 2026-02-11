@@ -1,5 +1,5 @@
 from typing import Optional, List, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from beanie import Document, Link
 from pydantic import Field
 
@@ -7,7 +7,7 @@ class Transaction(Document):
     transaction_id: str = Field(unique=True)
     amount: float
     customer_id: int
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     merchant_id: int
     category: str
     transaction_type: str
@@ -23,11 +23,11 @@ class Transaction(Document):
 
 class Alert(Document):
     transaction: Link[Transaction]
-    risk_score: int # 0-99
-    risk_level: str # Very Low -> Very High
-    status: str = "Pending" # Pending, Reviewed, Dismissed
-    assigned_queue: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    risk_score: int = Field(default=0) # 0-99
+    risk_level: str = Field(default="Low") # Very Low -> Very High
+    status: str = Field(default="Pending") # Pending, Reviewed, Dismissed
+    assigned_queue: str = Field(default="General")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     class Settings:
         name = "alerts"
@@ -35,18 +35,18 @@ class Alert(Document):
 class CaseNote(Document):
     note: str
     analyst_id: int
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "case_notes"
 
 class Case(Document):
     alert: Link[Alert]
-    status: str = "Open" # Open, In Progress, Closed, SAR Filed
+    status: str = Field(default="Open") # Open, In Progress, Closed, SAR Filed
     analyst_id: Optional[int] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    notes: List[Link[CaseNote]] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    notes: List[Link[CaseNote]] = Field(default_factory=list)
 
     class Settings:
         name = "cases"
@@ -59,7 +59,7 @@ class Rule(Document):
     is_active: bool = True
     conditions: Any # JSON object representing the rule logic
     priority: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "rules"
