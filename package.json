@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "cd frontend && npm install && npm run build && cd .. && mkdir -p public && cp -r frontend/public/* public/ 2>/dev/null || true",
     "start": "cd frontend && npm run start"
   },
   "dependencies": {
