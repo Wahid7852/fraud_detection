@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   output: 'standalone',
-  experimental: {
-    outputFileTracingRoot: require('path').join(__dirname, '../../'),
-  },
+  outputFileTracingRoot: require('path').join(__dirname, '../../'),
   async rewrites() {
     return [
       {
