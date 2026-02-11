@@ -1,8 +1,3 @@
-import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-import joblib
 import os
 
 class MLEngine:
@@ -15,19 +10,32 @@ class MLEngine:
             self.model_path = model_path
             
         self.model = None
-        self.le_category = LabelEncoder()
+        self.le_category = None
         
-        if os.path.exists(self.model_path):
-            loaded_data = joblib.load(self.model_path)
-            if isinstance(loaded_data, dict):
-                self.model = loaded_data.get('model')
-                self.le_category = loaded_data.get('le_category')
-            else:
-                self.model = loaded_data
-                # le_category remains a new instance
+        # Try to load the model if sklearn/joblib are available
+        try:
+            import joblib
+            if os.path.exists(self.model_path):
+                loaded_data = joblib.load(self.model_path)
+                if isinstance(loaded_data, dict):
+                    self.model = loaded_data.get('model')
+                    self.le_category = loaded_data.get('le_category')
+                else:
+                    self.model = loaded_data
+        except ImportError:
+            # sklearn/joblib not available in production (Vercel size limit)
+            self.model = None
 
     def train(self, data):
         import pandas as pd
+        import numpy as np
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.model_selection import train_test_split
+        from sklearn.preprocessing import LabelEncoder
+        import joblib
+
+        self.le_category = LabelEncoder()
+        
         # Prepare features
         # Assuming data has: Amount, Category, FraudIndicator
         X = data[['Amount', 'Category']].copy()
@@ -48,15 +56,35 @@ class MLEngine:
         print(f"Model trained and saved to {self.model_path}")
 
     def predict(self, amount: float, category: str) -> float:
-        if self.model is None:
-            # Fallback if no model trained
-            return 0.1 # Low probability
+        # Check if we can use the ML model
+        if self.model is not None:
+            try:
+                import numpy as np
+                try:
+                    cat_encoded = self.le_category.transform([category])[0]
+                except:
+                    cat_encoded = 0 # Default/Other
+                    
+                features = np.array([[amount, cat_encoded]])
+                probability = self.model.predict_proba(features)[0][1]
+                return float(probability)
+            except Exception as e:
+                print(f"ML prediction error: {e}")
+                # Fallback to heuristic
+        
+        # Lightweight heuristic prediction (no dependencies)
+        # Higher risk for high amounts and certain categories
+        base_risk = 0.05
+        
+        # Amount heuristic
+        if amount > 5000:
+            base_risk += 0.4
+        elif amount > 1000:
+            base_risk += 0.2
             
-        try:
-            cat_encoded = self.le_category.transform([category])[0]
-        except:
-            cat_encoded = 0 # Default/Other
+        # Category heuristic
+        high_risk_cats = ['crypto', 'electronics', 'transfer', 'gambling']
+        if category.lower() in high_risk_cats:
+            base_risk += 0.3
             
-        features = np.array([[amount, cat_encoded]])
-        probability = self.model.predict_proba(features)[0][1]
-        return float(probability)
+        return min(float(base_risk), 0.95)

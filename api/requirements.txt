@@ -7,7 +7,4 @@ pydantic-settings
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
-numpy
-scikit-learn
-joblib
 python-dotenv

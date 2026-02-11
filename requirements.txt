@@ -7,8 +7,9 @@ pydantic-settings
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
-pandas
-numpy
-scikit-learn
-joblib
 python-dotenv
+# Local development dependencies (not installed in Vercel production)
+# pandas
+# numpy
+# scikit-learn
+# joblib
