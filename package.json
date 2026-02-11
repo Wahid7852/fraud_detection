@@ -4,13 +4,9 @@
   "scripts": {
     "start:all": "node start-all.js",
     "dev": "npm run dev --prefix frontend",
-    "build": "npm run build --prefix frontend",
-    "install-all": "npm install && npm install --prefix frontend"
+    "build": "npm run build --prefix frontend"
   },
   "dependencies": {
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
     "@tailwindcss/postcss": "^4.1.18",
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",

@@ -5,8 +5,5 @@
       "source": "/api/(.*)",
       "destination": "/api/main.py"
     }
-  ],
-  "installCommand": "npm install && npm install --prefix frontend",
-  "buildCommand": "npm run build --prefix frontend",
-  "outputDirectory": "frontend/.next"
+  ]
 }
