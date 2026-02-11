@@ -19,7 +19,7 @@ function log(service, message, color) {
 log("System", "Starting Fraud Detection Platform...", colors.bright + colors.yellow);
 
 // Start Backend
-const backend = spawn('uvicorn', ['app.main:app', '--host', '0.0.0.0', '--port', '8000'], {
+const backend = spawn('uvicorn', ['app.main:app', '--host', '127.0.0.1', '--port', '8000', '--reload'], {
     cwd: path.join(process.cwd(), 'backend'),
     shell: true
 });
