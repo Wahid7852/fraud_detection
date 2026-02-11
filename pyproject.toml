@@ -15,4 +15,4 @@ dependencies = [
 ]
 
 [tool.vercel.scripts]
-app = "backend.app.main:app"
+app = "api.main:app"
