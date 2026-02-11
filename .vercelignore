@@ -1,5 +1,4 @@
-# Exclude frontend from backend serverless functions
-frontend/
+# Exclude node_modules and build artifacts
 node_modules/
 .next/
 
