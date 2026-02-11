@@ -1,20 +1,28 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from app.db.session import get_db
+from fastapi import APIRouter
 from app.models.models import Transaction, Alert
 from app.schemas.schemas import DashboardKPIs
 
 router = APIRouter()
 
 @router.get("/kpis", response_model=DashboardKPIs)
-def get_dashboard_kpis(db: Session = Depends(get_db)):
-    total_trans = db.query(Transaction).count()
-    fraud_alerts = db.query(Alert).filter(Alert.risk_score > 70).count()
-    total_amount = db.query(func.sum(Transaction.amount)).scalar() or 0
-    fraud_amount = db.query(func.sum(Transaction.amount)).join(Alert).filter(Alert.risk_score > 70).scalar() or 0
+async def get_dashboard_kpis():
+    total_trans = await Transaction.count()
+    fraud_alerts = await Alert.find(Alert.risk_score > 70).count()
     
-    # Mock data for demonstration, in a real app these would be calculated
+    # Calculate total amount using aggregation
+    pipeline_total = [{"$group": {"_id": None, "total": {"$sum": "$amount"}}}]
+    total_amount_res = await Transaction.aggregate(pipeline_total).to_list()
+    total_amount = total_amount_res[0]["total"] if total_amount_res else 0
+    
+    # In MongoDB/Beanie, joining is done via lookups or separate queries.
+    # For now, let's keep it simple or use a manual join if needed.
+    # Since we have links, we can find alerts and then get their transaction amounts.
+    fraud_amount = 0
+    alerts = await Alert.find(Alert.risk_score > 70).fetch_links().to_list()
+    for alert in alerts:
+        if alert.transaction:
+            fraud_amount += alert.transaction.amount
+    
     return DashboardKPIs(
         fraud_rate=(fraud_alerts / total_trans * 100) if total_trans > 0 else 0,
         fraud_sum=fraud_amount,
@@ -25,9 +33,8 @@ def get_dashboard_kpis(db: Session = Depends(get_db)):
     )
 
 @router.get("/alerts-over-time")
-def get_alerts_over_time(db: Session = Depends(get_db)):
-    # Group by date and count alerts
-    # For now, return mock trend data
+async def get_alerts_over_time():
+    # Return mock trend data
     return [
         {"date": "2024-02-01", "alerts": 10, "fraud": 2},
         {"date": "2024-02-02", "alerts": 15, "fraud": 5},

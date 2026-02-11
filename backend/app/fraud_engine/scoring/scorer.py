@@ -1,14 +1,14 @@
 from app.fraud_engine.rules_engine.engine import RulesEngine
 from app.fraud_engine.ml_engine.model import MLEngine
 from app.models.models import Transaction
-from sqlalchemy.orm import Session
 
 class Scorer:
-    def __init__(self, db: Session):
-        self.rules_engine = RulesEngine(db)
+    def __init__(self):
+        self.rules_engine = RulesEngine()
         self.ml_engine = MLEngine()
 
-    def calculate_score(self, transaction: Transaction):
+    async def calculate_score(self, transaction: Transaction):
+        await self.rules_engine.initialize()
         rule_result = self.rules_engine.evaluate(transaction)
         ml_prob = self.ml_engine.predict(transaction.amount, transaction.category)
         

@@ -1,26 +1,20 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
 from typing import List
 
-from app.db.session import engine, Base, get_db
-# Remove the problematic models import that might be triggering metadata discovery
-# from app.models import models 
+from app.db.session import init_db
 from app.api.api import api_router
 
 app = FastAPI(title="Fraud Detection & Case Management API")
 
-# Create tables (moved to startup event for better reliability)
+# Initialize MongoDB with Beanie
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     try:
-        # Import models inside the function to avoid global metadata triggers
-        from app.models.models import Transaction, Alert, Case, CaseNote, Rule
-        Base.metadata.create_all(bind=engine)
+        await init_db()
+        print("MongoDB initialized successfully")
     except Exception as e:
         print(f"Error during database initialization: {e}")
-        # We don't raise here so the app can at least start, 
-        # but subsequent DB calls will fail with descriptive errors.
 
 app.add_middleware(
     CORSMiddleware,

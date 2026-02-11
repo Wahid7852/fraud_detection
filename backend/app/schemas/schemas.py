@@ -15,10 +15,11 @@ class TransactionCreate(TransactionBase):
     pass
 
 class Transaction(TransactionBase):
-    id: int
+    id: Optional[Any] = None
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 class RuleBase(BaseModel):
     name: str
@@ -30,40 +31,41 @@ class RuleBase(BaseModel):
     priority: int = 0
 
 class Rule(RuleBase):
-    id: int
+    id: Optional[Any] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 class AlertBase(BaseModel):
-    transaction_id: int
     risk_score: int
     risk_level: str
     status: str = "Pending"
     assigned_queue: Optional[str] = None
 
 class Alert(AlertBase):
-    id: int
+    id: Optional[Any] = None
     created_at: datetime
-    transaction: Transaction
+    transaction: Optional[Transaction] = None
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 class CaseBase(BaseModel):
-    alert_id: int
     status: str = "Open"
     analyst_id: Optional[int] = None
 
 class Case(CaseBase):
-    id: int
+    id: Optional[Any] = None
     created_at: datetime
     updated_at: datetime
-    alert: Alert
+    alert: Optional[Alert] = None
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 class DashboardKPIs(BaseModel):
     fraud_rate: float

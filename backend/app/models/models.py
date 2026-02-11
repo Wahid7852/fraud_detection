@@ -1,75 +1,65 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from app.db.session import Base
-import datetime
+from typing import Optional, List, Any
+from datetime import datetime
+from beanie import Document, Link
+from pydantic import Field
 
-class Transaction(Base):
-    __tablename__ = "transactions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    transaction_id = Column(String, unique=True, index=True)
-    amount = Column(Float)
-    customer_id = Column(Integer, index=True)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    merchant_id = Column(Integer)
-    category = Column(String)
-    transaction_type = Column(String)
+class Transaction(Document):
+    transaction_id: str = Field(unique=True)
+    amount: float
+    customer_id: int
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    merchant_id: int
+    category: str
+    transaction_type: str
     
     # ML features
-    old_balance_orig = Column(Float, nullable=True)
-    new_balance_orig = Column(Float, nullable=True)
-    old_balance_dest = Column(Float, nullable=True)
-    new_balance_dest = Column(Float, nullable=True)
+    old_balance_orig: Optional[float] = None
+    new_balance_orig: Optional[float] = None
+    old_balance_dest: Optional[float] = None
+    new_balance_dest: Optional[float] = None
 
-    alert = relationship("Alert", back_populates="transaction", uselist=False)
+    class Settings:
+        name = "transactions"
 
-class Alert(Base):
-    __tablename__ = "alerts"
-
-    id = Column(Integer, primary_key=True, index=True)
-    transaction_id = Column(Integer, ForeignKey("transactions.id"))
-    risk_score = Column(Integer) # 0-99
-    risk_level = Column(String) # Very Low -> Very High
-    status = Column(String, default="Pending") # Pending, Reviewed, Dismissed
-    assigned_queue = Column(String)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+class Alert(Document):
+    transaction: Link[Transaction]
+    risk_score: int # 0-99
+    risk_level: str # Very Low -> Very High
+    status: str = "Pending" # Pending, Reviewed, Dismissed
+    assigned_queue: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    transaction = relationship("Transaction", back_populates="alert")
-    case = relationship("Case", back_populates="alert", uselist=False)
+    class Settings:
+        name = "alerts"
 
-class Case(Base):
-    __tablename__ = "cases"
+class CaseNote(Document):
+    note: str
+    analyst_id: int
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    id = Column(Integer, primary_key=True, index=True)
-    alert_id = Column(Integer, ForeignKey("alerts.id"))
-    status = Column(String, default="Open") # Open, In Progress, Closed, SAR Filed
-    analyst_id = Column(Integer, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
-    
-    alert = relationship("Alert", back_populates="case")
-    notes = relationship("CaseNote", back_populates="case")
+    class Settings:
+        name = "case_notes"
 
-class CaseNote(Base):
-    __tablename__ = "case_notes"
+class Case(Document):
+    alert: Link[Alert]
+    status: str = "Open" # Open, In Progress, Closed, SAR Filed
+    analyst_id: Optional[int] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    notes: List[Link[CaseNote]] = []
 
-    id = Column(Integer, primary_key=True, index=True)
-    case_id = Column(Integer, ForeignKey("cases.id"))
-    note = Column(String)
-    analyst_id = Column(Integer)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    class Settings:
+        name = "cases"
 
-    case = relationship("Case", back_populates="notes")
+class Rule(Document):
+    name: str
+    description: str
+    score_impact: int
+    action: str # Approve, Deny, Review
+    is_active: bool = True
+    conditions: Any # JSON object representing the rule logic
+    priority: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-class Rule(Base):
-    __tablename__ = "rules"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String)
-    score_impact = Column(Integer)
-    action = Column(String) # Approve, Deny, Review
-    is_active = Column(Boolean, default=True)
-    conditions = Column(JSON) # JSON object representing the rule logic
-    priority = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    class Settings:
+        name = "rules"

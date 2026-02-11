@@ -6,13 +6,6 @@ from dotenv import load_dotenv
 # Load .env file
 load_dotenv()
 
-# Check for DATABASE_URL (for debugging)
-db_url = os.getenv("DATABASE_URL")
-if db_url:
-    print(f"DATABASE_URL is set (starts with {db_url[:10]}...)")
-else:
-    print("DATABASE_URL is NOT set, using fallback /tmp/fraud_detection.db")
-
 # Add the project root and backend directory to sys.path
 # This ensures that 'backend.app.main' or 'app.main' can be found at runtime
 current_dir = os.path.dirname(os.path.abspath(__file__))

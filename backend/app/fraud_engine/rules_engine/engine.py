@@ -1,11 +1,12 @@
 from typing import List, Dict, Any
-from sqlalchemy.orm import Session
 from app.models.models import Transaction, Rule
 
 class RulesEngine:
-    def __init__(self, db: Session):
-        self.db = db
-        self.rules = self.db.query(Rule).filter(Rule.is_active == True).order_by(Rule.priority).all()
+    def __init__(self):
+        self.rules = []
+
+    async def initialize(self):
+        self.rules = await Rule.find(Rule.is_active == True).sort(+Rule.priority).to_list()
 
     def evaluate(self, transaction: Transaction) -> Dict[str, Any]:
         triggered_rules = []
