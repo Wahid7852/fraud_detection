@@ -7,13 +7,14 @@ router = APIRouter()
 
 @router.get("/", response_model=List[RuleSchema])
 async def get_rules():
-    return await Rule.find_all().to_list()
+    rules = await Rule.find_all().to_list()
+    return [RuleSchema.model_validate(r) for r in rules]
 
 @router.post("/", response_model=RuleSchema)
 async def create_rule(rule: RuleBase):
     db_rule = Rule(**rule.dict())
     await db_rule.insert()
-    return db_rule
+    return RuleSchema.model_validate(db_rule)
 
 @router.put("/{rule_id}", response_model=RuleSchema)
 async def update_rule(rule_id: str, rule_update: RuleBase):
@@ -27,7 +28,7 @@ async def update_rule(rule_id: str, rule_update: RuleBase):
         setattr(db_rule, key, value)
         
     await db_rule.save()
-    return db_rule
+    return RuleSchema.model_validate(db_rule)
 
 @router.delete("/{rule_id}")
 async def delete_rule(rule_id: str):

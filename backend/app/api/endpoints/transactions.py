@@ -35,11 +35,12 @@ async def create_transaction(transaction: TransactionCreate):
             )
             await case.insert()
             
-    return db_trans
+    return TransactionSchema.model_validate(db_trans)
 
 @router.get("/", response_model=List[TransactionSchema])
 async def get_transactions():
-    return await Transaction.find_all().to_list()
+    transactions = await Transaction.find_all().to_list()
+    return [TransactionSchema.model_validate(t) for t in transactions]
 
 @router.get("/{trans_id}", response_model=TransactionSchema)
 async def get_transaction(trans_id: str):
@@ -49,4 +50,4 @@ async def get_transaction(trans_id: str):
         trans = await Transaction.find_one(Transaction.transaction_id == trans_id)
         if not trans:
             raise HTTPException(status_code=404, detail="Transaction not found")
-    return trans
+    return TransactionSchema.model_validate(trans)

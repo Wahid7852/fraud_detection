@@ -12,7 +12,7 @@ export const dashboardService = {
 export const alertService = {
   getAlerts: (params?: any) => api.get('/alerts', { params }).then(res => res.data),
   getAlert: (id: string) => api.get(`/alerts/${id}`).then(res => res.data),
-  updateAlert: (id: number, data: any) => api.put(`/alerts/${id}`, data).then(res => res.data),
+  updateAlert: (id: string, data: any) => api.put(`/alerts/${id}`, data).then(res => res.data),
   takeAction: (id: string, action: string) => api.post(`/alerts/${id}/action`, { action }).then(res => res.data),
 };
 
@@ -27,6 +27,11 @@ export const caseService = {
 export const ruleService = {
   getRules: () => api.get('/rules').then(res => res.data),
   createRule: (rule: any) => api.post('/rules', rule).then(res => res.data),
-  updateRule: (id: number, rule: any) => api.put(`/rules/${id}`, rule).then(res => res.data),
-  deleteRule: (id: number) => api.delete(`/rules/${id}`).then(res => res.data),
+  updateRule: (id: string, rule: any) => api.put(`/rules/${id}`, rule).then(res => res.data),
+  deleteRule: (id: string) => api.delete(`/rules/${id}`).then(res => res.data),
+};
+
+export const analysisService = {
+  getResults: () => api.get('/analysis/results').then(res => res.data),
+  getTrends: () => api.get('/analysis/trends').then(res => res.data),
 };

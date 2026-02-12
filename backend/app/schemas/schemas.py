@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+from beanie import PydanticObjectId
 
 class TransactionBase(BaseModel):
     transaction_id: str
@@ -15,11 +16,19 @@ class TransactionCreate(TransactionBase):
     pass
 
 class Transaction(TransactionBase):
-    id: Optional[Any] = None
+    id: Optional[str] = Field(None, alias="_id", serialization_alias="id")
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any) -> Optional[str]:
+        if isinstance(v, PydanticObjectId):
+            return str(v)
+        return v
 
 class RuleBase(BaseModel):
     name: str
@@ -31,12 +40,20 @@ class RuleBase(BaseModel):
     priority: int = 0
 
 class Rule(RuleBase):
-    id: Optional[Any] = None
+    id: Optional[str] = Field(None, alias="_id", serialization_alias="id")
     created_at: datetime
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any) -> Optional[str]:
+        if isinstance(v, PydanticObjectId):
+            return str(v)
+        return v
 
 class AlertBase(BaseModel):
     risk_score: int
@@ -45,27 +62,43 @@ class AlertBase(BaseModel):
     assigned_queue: Optional[str] = None
 
 class Alert(AlertBase):
-    id: Optional[Any] = None
+    id: Optional[str] = Field(None, alias="_id", serialization_alias="id")
     created_at: datetime
     transaction: Optional[Transaction] = None
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any) -> Optional[str]:
+        if isinstance(v, PydanticObjectId):
+            return str(v)
+        return v
 
 class CaseBase(BaseModel):
     status: str = "Open"
     analyst_id: Optional[int] = None
 
 class Case(CaseBase):
-    id: Optional[Any] = None
+    id: Optional[str] = Field(None, alias="_id", serialization_alias="id")
     created_at: datetime
     updated_at: datetime
     alert: Optional[Alert] = None
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any) -> Optional[str]:
+        if isinstance(v, PydanticObjectId):
+            return str(v)
+        return v
 
 class DashboardKPIs(BaseModel):
     fraud_rate: float

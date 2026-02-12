@@ -20,10 +20,10 @@ async def get_dashboard_kpis():
     fraud_amount = 0
     alerts = await Alert.find(Alert.risk_score > 70).to_list()
     for alert in alerts:
-        await alert.fetch_links()
-    for alert in alerts:
         if alert.transaction:
-            fraud_amount += alert.transaction.amount
+            transaction = await Transaction.get(alert.transaction.ref.id)
+            if transaction:
+                fraud_amount += transaction.amount
     
     return DashboardKPIs(
         fraud_rate=(fraud_alerts / total_trans * 100) if total_trans > 0 else 0,

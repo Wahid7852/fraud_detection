@@ -10,7 +10,7 @@ export default function AlertsPage() {
   const queryClient = useQueryClient();
   const [selectedQueue, setSelectedQueue] = useState('All Queues');
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const exportToCSV = () => {
@@ -55,7 +55,7 @@ export default function AlertsPage() {
     }
   };
 
-  const toggleSelect = (id: number) => {
+  const toggleSelect = (id: string) => {
     setSelectedIds(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
@@ -67,7 +67,7 @@ export default function AlertsPage() {
   });
 
   const createCaseMutation = useMutation({
-    mutationFn: (alertId: number) => caseService.createCase({ alert_id: alertId, status: 'Open' }),
+    mutationFn: (alertId: string) => caseService.createCase({ alert_id: alertId, status: 'Open' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       setSelectedAlert(null);
@@ -76,7 +76,7 @@ export default function AlertsPage() {
   });
 
   const dismissAlertMutation = useMutation({
-    mutationFn: (alertId: number) => alertService.updateAlert(alertId, { status: 'Dismissed' }),
+    mutationFn: (alertId: string) => alertService.updateAlert(alertId, { status: 'Dismissed' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       setSelectedAlert(null);
@@ -149,6 +149,8 @@ export default function AlertsPage() {
                   onChange={(e) => setSelectedQueue(e.target.value)}
                 >
                   <option>All Queues</option>
+                  <option>General</option>
+                  <option>Fraud Queue</option>
                   <option>High Profile Queue</option>
                   <option>New Accounts</option>
                   <option>High Velocity</option>

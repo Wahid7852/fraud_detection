@@ -21,6 +21,7 @@ const navItems = [
   { name: 'Cases', href: '/cases', icon: Briefcase },
   { name: 'SARs', href: '/sars', icon: FileText },
   { name: 'Rules', href: '/rules', icon: ShieldCheck },
+  { name: 'Analysis', href: '/analysis', icon: BarChart3 },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

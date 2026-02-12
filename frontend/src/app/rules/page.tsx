@@ -46,7 +46,7 @@ export default function RulesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => ruleService.updateRule(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => ruleService.updateRule(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rules'] });
       closeModal();
@@ -54,7 +54,7 @@ export default function RulesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ruleService.deleteRule,
+    mutationFn: (id: string) => ruleService.deleteRule(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rules'] });
     },
@@ -95,7 +95,7 @@ export default function RulesPage() {
     }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this rule?')) {
       deleteMutation.mutate(id);
     }

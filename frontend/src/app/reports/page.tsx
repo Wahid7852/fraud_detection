@@ -22,15 +22,33 @@ export default function ReportsPage() {
   }, []);
 
   const handleGenerateReport = () => {
-    alert('Generating custom report based on current filters...');
+    // Simulate report generation and download
+    const reportName = `Fraud_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    console.log(`Generating ${reportName}...`);
+    
+    // In a real app, this would call an API
+    // For now, we'll simulate a successful generation
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+    toast.innerText = `✅ Report "${reportName}" generated successfully!`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   };
 
   const handleTemplateClick = (title: string) => {
-    alert(`Downloading template: ${title}`);
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+    toast.innerText = `📥 Downloading ${title}...`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   };
 
   const handleAddWidget = () => {
-    alert('Opening visualization builder...');
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+    toast.innerText = `🛠️ Visualization Builder launched!`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   };
 
   const reports = [
@@ -131,7 +149,13 @@ export default function ReportsPage() {
             ))}
           </div>
           <button 
-            onClick={() => alert('Redirecting to templates gallery...')}
+            onClick={() => {
+              const toast = document.createElement('div');
+              toast.className = 'fixed bottom-4 right-4 bg-slate-900 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+              toast.innerText = `📂 Opening Template Gallery...`;
+              document.body.appendChild(toast);
+              setTimeout(() => toast.remove(), 3000);
+            }}
             className="w-full mt-6 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-all"
           >
             Browse All Templates
