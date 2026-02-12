@@ -31,10 +31,19 @@ export const KPICards = () => {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {kpiConfig.map((config) => {
-        const val = kpis?.[config.key as keyof typeof kpis];
-        const displayVal = config.unit === '$' 
-          ? `$${Number(val).toLocaleString()}` 
-          : `${val}${config.unit}`;
+        const val = kpis?.[config.key as keyof typeof kpis] || 0;
+        let displayVal: string;
+        
+        if (config.unit === '$') {
+          // Format currency with proper rounding
+          const numVal = typeof val === 'number' ? val : parseFloat(String(val)) || 0;
+          displayVal = `$${numVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+          // Format percentage with 2 decimal places, limit to 100%
+          const numVal = typeof val === 'number' ? val : parseFloat(String(val)) || 0;
+          const limitedVal = Math.min(Math.max(numVal, 0), 100);
+          displayVal = `${limitedVal.toFixed(2)}${config.unit}`;
+        }
 
         return (
           <div key={config.key} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

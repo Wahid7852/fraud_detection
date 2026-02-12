@@ -11,6 +11,9 @@ export default function CasesPage() {
   const [selectedCase, setSelectedCase] = useState<any>(null);
   const [newNote, setNewNote] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [analystFilter, setAnalystFilter] = useState<number | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const exportCasesToCSV = () => {
     if (!filteredCases?.length) return;
@@ -18,9 +21,9 @@ export default function CasesPage() {
     const rows = filteredCases.map((c: any) => [
       `CASE-${c.id}`,
       c.status,
-      `AL-${c.alert_id}`,
-      c.alert.risk_level,
-      c.alert.transaction.amount,
+      c.alert?.id ? `AL-${c.alert.id}` : 'N/A',
+      c.alert?.risk_level || 'N/A',
+      c.alert?.transaction?.amount || 0,
       c.analyst_id || 'Unassigned',
       c.created_at
     ]);
@@ -37,27 +40,45 @@ export default function CasesPage() {
   };
 
   const { data: cases, isLoading } = useQuery({
-    queryKey: ['cases'],
-    queryFn: caseService.getCases,
+    queryKey: ['cases', statusFilter, analystFilter, searchQuery],
+    queryFn: () => caseService.getCases({ 
+      status: statusFilter || undefined,
+      analyst_id: analystFilter || undefined,
+      search: searchQuery || undefined
+    }),
   });
 
   const updateCaseStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) => 
+    mutationFn: ({ id, status }: { id: string; status: string }) => 
       caseService.updateCase(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cases'] });
       if (selectedCase) {
-        setSelectedCase({ ...selectedCase, status: selectedCase.status }); // Trigger re-render if needed
+        queryClient.invalidateQueries({ queryKey: ['cases', selectedCase.id] });
       }
     },
   });
 
   const addNoteMutation = useMutation({
-    mutationFn: (data: { case_id: number; note: string; analyst_id: number }) => 
+    mutationFn: (data: { case_id: string; note: string; analyst_id: number }) => 
       caseService.addNote(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cases'] });
       setNewNote('');
+      if (selectedCase) {
+        queryClient.invalidateQueries({ queryKey: ['cases', selectedCase.id] });
+      }
+    },
+  });
+
+  const assignAnalystMutation = useMutation({
+    mutationFn: ({ caseId, analystId }: { caseId: string; analystId: number }) =>
+      caseService.assignAnalyst(caseId, analystId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cases'] });
+      if (selectedCase) {
+        queryClient.invalidateQueries({ queryKey: ['cases', selectedCase.id] });
+      }
     },
   });
 
@@ -71,11 +92,7 @@ export default function CasesPage() {
     }
   };
 
-  const filteredCases = cases?.filter((c: any) => 
-    searchQuery === '' || 
-    `CASE-${c.id}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.alert?.transaction?.customer_id?.toString() || '').includes(searchQuery)
-  );
+  const filteredCases = cases; // Already filtered by API
 
   return (
     <div className="space-y-6">
@@ -108,13 +125,62 @@ export default function CasesPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <button 
-              onClick={() => alert('Case Filters: Analyst, Status, Priority')}
-              className="flex items-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              <Filter className="mr-2 h-4 w-4" />
-              Filters
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filters
+                {(statusFilter || analystFilter) && (
+                  <span className="ml-2 rounded-full bg-blue-600 text-white text-xs px-2 py-0.5">
+                    {(statusFilter ? 1 : 0) + (analystFilter ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+              {showFilters && (
+                <div className="absolute right-0 mt-2 w-64 rounded-lg border border-slate-200 bg-white shadow-lg z-10 p-4">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 mb-2 block">Status</label>
+                      <select
+                        value={statusFilter || ''}
+                        onChange={(e) => setStatusFilter(e.target.value || null)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Closed">Closed</option>
+                        <option value="SAR Filed">SAR Filed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 mb-2 block">Analyst</label>
+                      <select
+                        value={analystFilter || ''}
+                        onChange={(e) => setAnalystFilter(e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      >
+                        <option value="">All Analysts</option>
+                        <option value="1">Analyst 1</option>
+                        <option value="2">Analyst 2</option>
+                        <option value="3">Analyst 3</option>
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setStatusFilter(null);
+                        setAnalystFilter(null);
+                      }}
+                      className="w-full text-xs text-slate-600 hover:text-slate-900"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -171,10 +237,10 @@ export default function CasesPage() {
                           "h-2 w-2 rounded-full mr-2",
                           c.alert.risk_score >= 90 ? "bg-red-500" : c.alert.risk_score >= 70 ? "bg-orange-500" : "bg-amber-500"
                         )} />
-                        <span className="font-medium text-slate-700">{c.alert.risk_level}</span>
+                        <span className="font-medium text-slate-700">{c.alert?.risk_level || 'N/A'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-bold text-slate-900">${c.alert.transaction.amount.toFixed(2)}</td>
+                    <td className="px-6 py-4 font-bold text-slate-900">${c.alert?.transaction?.amount?.toFixed(2) || '0.00'}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center text-slate-600">
                         <User className="mr-2 h-4 w-4 text-slate-400" />
@@ -208,7 +274,10 @@ export default function CasesPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">Case CASE-{selectedCase.id}</h2>
-                  <p className="text-xs text-slate-500">Alert AL-{selectedCase.alert_id} • Transaction {selectedCase.alert.transaction.transaction_id}</p>
+                  <p className="text-xs text-slate-500">
+                    {selectedCase.alert?.id ? `Alert AL-${selectedCase.alert.id}` : 'No Alert'} • 
+                    {selectedCase.alert?.transaction?.transaction_id ? ` Transaction ${selectedCase.alert.transaction.transaction_id}` : ' No Transaction'}
+                  </p>
                 </div>
               </div>
               <button onClick={() => setSelectedCase(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
@@ -224,17 +293,42 @@ export default function CasesPage() {
                   {['Open', 'In Progress', 'Closed', 'SAR Filed'].map((status) => (
                     <button
                       key={status}
-                      onClick={() => updateCaseStatusMutation.mutate({ id: selectedCase.id, status })}
+                      onClick={() => updateCaseStatusMutation.mutate({ id: String(selectedCase.id), status })}
+                      disabled={updateCaseStatusMutation.isPending}
                       className={cn(
                         "px-4 py-2 rounded-lg text-sm font-bold transition-all border",
                         selectedCase.status === status 
                           ? "bg-slate-900 text-white border-slate-900" 
-                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                        updateCaseStatusMutation.isPending && "opacity-50 cursor-not-allowed"
                       )}
                     >
                       {status}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Assign Analyst */}
+              <div className="rounded-2xl border border-slate-200 p-6 space-y-4">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Assign Analyst</h3>
+                <div className="flex items-center gap-3">
+                  <select
+                    value={selectedCase.analyst_id || ''}
+                    onChange={(e) => {
+                      const analystId = e.target.value ? parseInt(e.target.value) : null;
+                      if (analystId) {
+                        assignAnalystMutation.mutate({ caseId: String(selectedCase.id), analystId });
+                      }
+                    }}
+                    disabled={assignAnalystMutation.isPending}
+                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    <option value="">Unassigned</option>
+                    <option value="1">Analyst 1</option>
+                    <option value="2">Analyst 2</option>
+                    <option value="3">Analyst 3</option>
+                  </select>
                 </div>
               </div>
 
@@ -273,7 +367,7 @@ export default function CasesPage() {
                       className="w-full rounded-2xl border border-slate-200 p-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-12 min-h-[100px]"
                     />
                     <button 
-                      onClick={() => addNoteMutation.mutate({ case_id: selectedCase.id, note: newNote, analyst_id: 1 })}
+                      onClick={() => addNoteMutation.mutate({ case_id: String(selectedCase.id), note: newNote, analyst_id: 1 })}
                       disabled={!newNote.trim() || addNoteMutation.isPending}
                       className="absolute bottom-4 right-4 rounded-xl bg-blue-600 p-2 text-white hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-200"
                     >
@@ -296,11 +390,15 @@ export default function CasesPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-500">Transaction Amount</span>
-                    <span className="text-sm font-bold text-slate-900">${selectedCase.alert.transaction.amount.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-slate-900">
+                      ${selectedCase.alert?.transaction?.amount?.toFixed(2) || '0.00'}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-500">Merchant Category</span>
-                    <span className="text-sm font-bold text-slate-900">{selectedCase.alert.transaction.category}</span>
+                    <span className="text-sm font-bold text-slate-900">
+                      {selectedCase.alert?.transaction?.category || 'N/A'}
+                    </span>
                   </div>
                 </div>
               </div>

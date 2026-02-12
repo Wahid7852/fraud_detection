@@ -11,3 +11,6 @@ python-dotenv
 scikit-learn
 joblib
 numpy
+imblearn
+tqdm
+pandas

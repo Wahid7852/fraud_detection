@@ -63,3 +63,16 @@ class Rule(Document):
 
     class Settings:
         name = "rules"
+
+class SAR(Document):
+    sar_id: str = Field(unique=True)
+    case: Link[Case]
+    customer_name: Optional[str] = None
+    amount: float
+    status: str = Field(default="Draft") # Draft, Pending, Filed
+    filing_date: Optional[datetime] = None
+    description: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "sars"

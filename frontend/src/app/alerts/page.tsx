@@ -87,7 +87,7 @@ export default function AlertsPage() {
     const matchesQueue = selectedQueue === 'All Queues' || alert.assigned_queue === selectedQueue;
     const matchesSearch = searchQuery === '' || 
       `AL-${alert.id}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      `Customer ${alert.transaction.customer_id}`.toLowerCase().includes(searchQuery.toLowerCase());
+      (alert.transaction?.customer_id && `Customer ${alert.transaction.customer_id}`.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesQueue && matchesSearch;
   });
 
@@ -225,8 +225,12 @@ export default function AlertsPage() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-900">Customer {alert.transaction.customer_id}</td>
-                  <td className="px-6 py-4 font-medium text-slate-900">${alert.transaction.amount.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-slate-900">
+                    {alert.transaction?.customer_id ? `Customer ${alert.transaction.customer_id}` : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 font-medium text-slate-900">
+                    ${alert.transaction?.amount?.toFixed(2) || '0.00'}
+                  </td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
@@ -298,12 +302,12 @@ export default function AlertsPage() {
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { label: 'Transaction ID', value: selectedAlert.transaction.transaction_id, icon: Tag },
-                    { label: 'Amount', value: `$${selectedAlert.transaction.amount.toFixed(2)}`, icon: DollarSign },
-                    { label: 'Customer ID', value: selectedAlert.transaction.customer_id, icon: User },
-                    { label: 'Category', value: selectedAlert.transaction.category, icon: FileText },
-                    { label: 'Type', value: selectedAlert.transaction.transaction_type, icon: Clock },
-                    { label: 'Merchant ID', value: selectedAlert.transaction.merchant_id, icon: Tag },
+                    { label: 'Transaction ID', value: selectedAlert.transaction?.transaction_id || 'N/A', icon: Tag },
+                    { label: 'Amount', value: selectedAlert.transaction?.amount ? `$${selectedAlert.transaction.amount.toFixed(2)}` : '$0.00', icon: DollarSign },
+                    { label: 'Customer ID', value: selectedAlert.transaction?.customer_id || 'N/A', icon: User },
+                    { label: 'Category', value: selectedAlert.transaction?.category || 'N/A', icon: FileText },
+                    { label: 'Type', value: selectedAlert.transaction?.transaction_type || 'N/A', icon: Clock },
+                    { label: 'Merchant ID', value: selectedAlert.transaction?.merchant_id || 'N/A', icon: Tag },
                   ].map((item, i) => (
                     <div key={i} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
                       <p className="text-xs font-medium text-slate-500 flex items-center mb-1">

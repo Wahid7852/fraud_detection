@@ -78,6 +78,26 @@ class Alert(AlertBase):
             return str(v)
         return v
 
+class CaseNoteBase(BaseModel):
+    note: str
+    analyst_id: int
+
+class CaseNote(CaseNoteBase):
+    id: Optional[str] = Field(None, alias="_id", serialization_alias="id")
+    created_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any) -> Optional[str]:
+        if isinstance(v, PydanticObjectId):
+            return str(v)
+        return v
+
 class CaseBase(BaseModel):
     status: str = "Open"
     analyst_id: Optional[int] = None
@@ -87,6 +107,7 @@ class Case(CaseBase):
     created_at: datetime
     updated_at: datetime
     alert: Optional[Alert] = None
+    notes: Optional[List[CaseNote]] = None
 
     model_config = ConfigDict(
         from_attributes=True,

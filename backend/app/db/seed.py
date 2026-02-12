@@ -10,9 +10,10 @@ async def seed_data():
         categories = ["W", "H", "R", "S", "O"]
         types = ["debit", "credit"]
         for i in range(20):
+            amount = round(random.uniform(50.0, 6000.0), 2)  # Ensure minimum amount of 50
             trans = Transaction(
                 transaction_id=f"TX{1000+i}",
-                amount=round(random.uniform(10.0, 6000.0), 2),
+                amount=amount,
                 customer_id=random.randint(10000, 99999),
                 merchant_id=random.randint(1000, 9999),
                 category=random.choice(categories),

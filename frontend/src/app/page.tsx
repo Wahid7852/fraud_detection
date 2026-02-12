@@ -27,9 +27,9 @@ export default function Home() {
 
   const queues = [
     { name: 'High Profile Queue', count: allAlerts?.filter((a: any) => a.risk_score > 90).length || 0, color: 'bg-red-500' },
-    { name: 'New Accounts', count: allAlerts?.filter((a: any) => a.transaction.category === 'retail').length || 0, color: 'bg-blue-500' },
+    { name: 'New Accounts', count: allAlerts?.filter((a: any) => a.transaction?.category === 'retail').length || 0, color: 'bg-blue-500' },
     { name: 'High Velocity', count: allAlerts?.filter((a: any) => a.risk_score > 70 && a.risk_score <= 90).length || 0, color: 'bg-amber-500' },
-    { name: 'Merchant Anomalies', count: allAlerts?.filter((a: any) => a.transaction.category === 'entertainment').length || 0, color: 'bg-indigo-500' },
+    { name: 'Merchant Anomalies', count: allAlerts?.filter((a: any) => a.transaction?.category === 'entertainment').length || 0, color: 'bg-indigo-500' },
   ];
 
   return (
@@ -75,8 +75,12 @@ export default function Home() {
                     <td className="px-4 py-3 font-medium text-blue-600 underline decoration-blue-200 underline-offset-4">
                       <Link href="/alerts">AL-{alert.id}</Link>
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900">CUST-{alert.transaction.customer_id}</td>
-                    <td className="px-4 py-3 font-bold text-slate-700">${alert.transaction.amount.toFixed(2)}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {alert.transaction?.customer_id ? `CUST-${alert.transaction.customer_id}` : 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 font-bold text-slate-700">
+                      ${alert.transaction?.amount?.toFixed(2) || '0.00'}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={cn(
                         "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border",
