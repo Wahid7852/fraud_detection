@@ -1,20 +1,43 @@
-# Backend
-backend/__pycache__/
-backend/venv/
-backend/.venv/
-backend/*.db
-backend/*.joblib
-
-# Frontend
-frontend/node_modules/
-frontend/.next/
-frontend/out/
-frontend/build/
-frontend/.env*
-
-# Root
-.DS_Store
-*.db
-*.log
+# Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+ENV/
+env/
 .env
+*.db
+*.joblib
+*.h5
+backend/app/ml_models/*.joblib
+backend/app/ml_models/*.h5
+backend/app/ml_models/*.json
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+build/
 .vercel
+
+# Data
+sources/*.csv
+*.csv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project Specific
+.env*
+*.log
