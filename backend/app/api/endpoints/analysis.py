@@ -7,9 +7,8 @@ import os
 router = APIRouter()
 
 @router.get("/results")
-@cached(ttl=60) # Cache for 1 minute
 async def get_ml_results():
-    results = await AnalysisResult.find_all().to_list()
+    results = await AnalysisResult.get_pymongo_collection().find().to_list(length=None)
     
     if not results:
         return {
@@ -20,9 +19,13 @@ async def get_ml_results():
     # Format results to match the expected frontend structure
     formatted_data = {}
     for res in results:
-        formatted_data[res.model_name] = {
-            "accuracy": res.accuracy,
-            "feature_importance": res.feature_importance
+        formatted_data[res["model_name"]] = {
+            "accuracy": res.get("accuracy", 0),
+            "f1_score": res.get("f1_score", 0),
+            "precision": res.get("precision", 0),
+            "recall": res.get("recall", 0),
+            "auc_roc": res.get("auc_roc", 0),
+            "feature_importance": res.get("feature_importance", {})
         }
         
     return {

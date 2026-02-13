@@ -10,16 +10,16 @@ router = APIRouter()
 @cached(ttl=30) # Cache for 30 seconds
 async def get_dashboard_kpis():
     # Use aggregation for total amount and count
-    trans_stats = await Transaction.aggregate([
+    trans_stats = await Transaction.get_pymongo_collection().aggregate([
         {"$group": {"_id": None, "total_amount": {"$sum": "$amount"}, "count": {"$sum": 1}}}
-    ]).to_list()
+    ]).to_list(length=None)
     
     total_trans = trans_stats[0]["count"] if trans_stats else 0
     total_amount = trans_stats[0]["total_amount"] if trans_stats else 0
     
     # Use aggregation for fraud alerts stats
     # We need to join with Transaction to get the amount of flagged transactions
-    alert_stats = await Alert.aggregate([
+    alert_stats = await Alert.get_pymongo_collection().aggregate([
         {"$match": {"risk_score": {"$gt": 70}}},
         {"$lookup": {
             "from": "transactions",
@@ -33,7 +33,7 @@ async def get_dashboard_kpis():
             "fraud_alerts": {"$sum": 1}, 
             "fraud_amount": {"$sum": "$trans_data.amount"}
         }}
-    ]).to_list()
+    ]).to_list(length=None)
     
     fraud_alerts = alert_stats[0]["fraud_alerts"] if alert_stats else 0
     fraud_amount = alert_stats[0]["fraud_amount"] if alert_stats else 0
@@ -63,7 +63,7 @@ async def get_alerts_over_time():
     # This is MUCH faster than fetching all records
     
     # 1. Transaction counts per day
-    trans_trend = await Transaction.aggregate([
+    trans_trend = await Transaction.get_pymongo_collection().aggregate([
         {
             "$group": {
                 "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
@@ -71,10 +71,10 @@ async def get_alerts_over_time():
             }
         },
         {"$sort": {"_id": 1}}
-    ]).to_list()
+    ]).to_list(length=None)
     
     # 2. Alert counts per day
-    alert_trend = await Alert.aggregate([
+    alert_trend = await Alert.get_pymongo_collection().aggregate([
         {
             "$group": {
                 "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
@@ -83,7 +83,7 @@ async def get_alerts_over_time():
             }
         },
         {"$sort": {"_id": 1}}
-    ]).to_list()
+    ]).to_list(length=None)
     
     # Merge results
     trends = {}
@@ -104,7 +104,7 @@ async def get_alerts_over_time():
     chart_data = []
     for date in sorted(trends.keys()):
         chart_data.append({
-            "name": date,
+            "date": date,
             "alerts": trends[date]["alerts"],
             "fraud": trends[date]["fraud"],
             "total": trends[date]["total_transactions"]
@@ -115,6 +115,6 @@ async def get_alerts_over_time():
         today = datetime.now()
         for i in range(7):
             date = (today - timedelta(days=6-i)).strftime("%Y-%m-%d")
-            chart_data.append({"name": date, "alerts": 0, "fraud": 0, "total": 0})
+            chart_data.append({"date": date, "alerts": 0, "fraud": 0, "total": 0})
             
     return chart_data

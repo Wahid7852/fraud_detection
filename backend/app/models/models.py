@@ -81,6 +81,10 @@ class SAR(Document):
 class AnalysisResult(Document):
     model_name: str # decision_tree, naive_bayes, etc.
     accuracy: float
+    f1_score: float = 0.0
+    precision: float = 0.0
+    recall: float = 0.0
+    auc_roc: float = 0.0
     feature_importance: Optional[Dict[str, float]] = None
     last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
