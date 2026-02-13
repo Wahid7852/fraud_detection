@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from datetime import datetime, timedelta
 from pydantic import BaseModel
-from app.models.models import Transaction, Alert, Case
+from app.models.models import Transaction, Alert, Case, Report
+from app.services.llm_service import llm_service
+from app.core.cache import cached
 import pandas as pd
 import json
 
@@ -12,6 +14,18 @@ class ReportRequest(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     report_type: str = "summary"  # summary, detailed, trends
+
+@router.get("/list", response_model=List[Report])
+async def list_reports(
+    limit: int = Query(10, description="Number of reports to fetch"),
+    report_type: Optional[str] = None
+):
+    """List recently generated reports"""
+    query = Report.find_all()
+    if report_type:
+        query = query.find(Report.report_type == report_type)
+    
+    return await query.sort(-Report.generated_at).limit(limit).to_list()
 
 @router.get("/templates")
 async def get_report_templates():
@@ -45,11 +59,28 @@ async def get_report_templates():
 
 @router.post("/generate")
 async def generate_report(request: ReportRequest):
-    """Generate a custom report"""
+    """Generate a custom report or fetch from DB if recent"""
     # Set default date range if not provided
     end_date = request.end_date or datetime.now()
     start_date = request.start_date or (end_date - timedelta(days=30))
     
+    # Normalize dates for lookup
+    start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    # Check for recent pre-generated report (last 24 hours)
+    one_day_ago = datetime.now() - timedelta(hours=24)
+    existing_report = await Report.find_one(
+        Report.report_type == request.report_type,
+        Report.period_start == start_date,
+        Report.period_end == end_date,
+        Report.generated_at >= one_day_ago
+    )
+    
+    if existing_report:
+        print(f"Fetching pre-generated {request.report_type} report from DB")
+        return existing_report
+
     # Fetch data based on date range
     transactions = await Transaction.find(
         Transaction.timestamp >= start_date,
@@ -84,93 +115,150 @@ async def generate_report(request: ReportRequest):
         level = alert.risk_level
         risk_levels[level] = risk_levels.get(level, 0) + 1
     
-    # Generate report data
-    report_data = {
-        "report_type": request.report_type,
-        "period": {
-            "start": start_date.isoformat(),
-            "end": end_date.isoformat()
-        },
-        "summary": {
-            "total_transactions": total_transactions,
-            "total_alerts": total_alerts,
-            "total_cases": total_cases,
-            "fraud_rate": round(fraud_rate, 2),
-            "fraud_amount": round(fraud_amount, 2)
-        },
-        "case_status_breakdown": case_statuses,
-        "risk_level_breakdown": risk_levels,
-        "generated_at": datetime.now().isoformat()
+    summary_data = {
+        "total_transactions": total_transactions,
+        "total_alerts": total_alerts,
+        "total_cases": total_cases,
+        "fraud_rate": round(fraud_rate, 2),
+        "fraud_amount": round(fraud_amount, 2)
     }
+
+    # Generate AI Executive Summary using free model
+    print("Generating AI Executive Summary for new report...")
+    prompt = f"""
+    As a fraud management expert, provide a concise executive summary (3-4 sentences) for the following fraud report metrics:
+    Metrics: {json.dumps(summary_data)}
+    Case Breakdown: {json.dumps(case_statuses)}
+    Risk Breakdown: {json.dumps(risk_levels)}
     
-    return report_data
+    Focus on the fraud rate, total amount at risk, and case resolution efficiency.
+    """
+    
+    messages = [
+        {"role": "system", "content": "You are a professional fraud detection consultant. Provide clear, data-driven summaries."},
+        {"role": "user", "content": prompt}
+    ]
+    
+    executive_summary = await llm_service.get_completion(messages)
+    
+    # Store the report in DB for future instant fetching
+    new_report = Report(
+        report_type=request.report_type,
+        period_start=start_date,
+        period_end=end_date,
+        summary=summary_data,
+        case_status_breakdown=case_statuses,
+        risk_level_breakdown=risk_levels,
+        executive_summary=executive_summary,
+        generated_at=datetime.now()
+    )
+    await new_report.insert()
+    
+    return new_report
 
 @router.get("/trends")
+@cached(ttl=60)
 async def get_trends(
     days: int = Query(30, description="Number of days to analyze"),
     group_by: str = Query("day", description="Group by: day, week, month")
 ):
     """Get fraud trends over time"""
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=days)
-    
-    # Fetch transactions and alerts
-    transactions = await Transaction.find(
-        Transaction.timestamp >= start_date,
-        Transaction.timestamp <= end_date
-    ).to_list()
-    
-    alerts = await Alert.find_all().to_list()
-    
-    # Create a set of transaction IDs that have alerts (for faster lookup)
-    alert_transaction_ids = set()
-    for alert in alerts:
-        if alert.transaction:
+    try:
+        # Get all transactions and alerts (don't filter by date to show all data)
+        all_transactions = await Transaction.find_all().to_list()
+        all_alerts = await Alert.find_all().to_list()
+        
+        # Build a set of transaction IDs that have alerts
+        alert_transaction_ids = set()
+        for alert in all_alerts:
+            if alert.transaction:
+                try:
+                    if hasattr(alert.transaction, 'ref'):
+                        transaction_id = str(alert.transaction.ref.id)
+                        alert_transaction_ids.add(transaction_id)
+                    elif hasattr(alert.transaction, 'id'):
+                        transaction_id = str(alert.transaction.id)
+                        alert_transaction_ids.add(transaction_id)
+                except:
+                    continue
+        
+        # Group by time period - process all transactions to get actual dates
+        trends = {}
+        
+        # Process all transactions to build trends from actual data
+        for transaction in all_transactions:
+            if not transaction.timestamp:
+                continue
+                
             try:
-                # Get transaction ID from the link
-                if hasattr(alert.transaction, 'ref'):
-                    alert_transaction_ids.add(str(alert.transaction.ref.id))
-                elif hasattr(alert.transaction, 'id'):
-                    alert_transaction_ids.add(str(alert.transaction.id))
-            except:
-                pass
-    
-    # Group by time period
-    trends = {}
-    for transaction in transactions:
-        if group_by == "day":
-            key = transaction.timestamp.date().isoformat()
-        elif group_by == "week":
-            week_start = transaction.timestamp - timedelta(days=transaction.timestamp.weekday())
-            key = week_start.date().isoformat()
-        else:  # month
-            key = transaction.timestamp.strftime("%Y-%m")
+                trans_date = transaction.timestamp.date()
+                
+                if group_by == "day":
+                    key = trans_date.isoformat()
+                elif group_by == "week":
+                    week_start = trans_date - timedelta(days=trans_date.weekday())
+                    key = week_start.isoformat()
+                else:  # month
+                    key = transaction.timestamp.strftime("%Y-%m")
+                
+                if key not in trends:
+                    trends[key] = {"total": 0, "fraud": 0, "amount": 0.0}
+                
+                trends[key]["total"] += 1
+                trends[key]["amount"] += transaction.amount or 0.0
+                
+                # Check if this transaction has an alert
+                if str(transaction.id) in alert_transaction_ids:
+                    trends[key]["fraud"] += 1
+            except Exception as e:
+                continue
         
-        if key not in trends:
-            trends[key] = {"total": 0, "fraud": 0, "amount": 0.0}
+        # Convert to list format
+        trend_list = [
+            {
+                "date": key,
+                "total": val["total"],
+                "fraud": val["fraud"],
+                "legit": val["total"] - val["fraud"],
+                "amount": round(val["amount"], 2)
+            }
+            for key, val in sorted(trends.items())
+        ]
         
-        trends[key]["total"] += 1
-        trends[key]["amount"] += transaction.amount
+        # If no data, return empty structure for last 7 days
+        if not trend_list:
+            today = datetime.now().date()
+            trend_list = [
+                {
+                    "date": (today - timedelta(days=i)).isoformat(),
+                    "total": 0,
+                    "fraud": 0,
+                    "legit": 0,
+                    "amount": 0.0
+                }
+                for i in range(6, -1, -1)
+            ]
         
-        # Check if this transaction has an alert (using set for O(1) lookup)
-        if str(transaction.id) in alert_transaction_ids:
-            trends[key]["fraud"] += 1
-    
-    # Convert to list format
-    trend_list = [
-        {
-            "date": key,
-            "total": val["total"],
-            "fraud": val["fraud"],
-            "legit": val["total"] - val["fraud"],
-            "amount": round(val["amount"], 2)
-        }
-        for key, val in sorted(trends.items())
-    ]
-    
-    return trend_list
+        return trend_list
+    except Exception as e:
+        # Return empty data on error instead of crashing
+        import traceback
+        print(f"Error in get_trends: {e}")
+        print(traceback.format_exc())
+        today = datetime.now().date()
+        return [
+            {
+                "date": (today - timedelta(days=i)).isoformat(),
+                "total": 0,
+                "fraud": 0,
+                "legit": 0,
+                "amount": 0.0
+            }
+            for i in range(6, -1, -1)
+        ]
 
 @router.get("/stats")
+@cached(ttl=60)
 async def get_report_stats():
     """Get current statistics for dashboard"""
     total_transactions = await Transaction.count()

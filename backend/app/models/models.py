@@ -1,4 +1,4 @@
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 from datetime import datetime, timezone
 from beanie import Document, Link
 from pydantic import Field
@@ -26,7 +26,8 @@ class Alert(Document):
     risk_score: int = Field(default=0) # 0-99
     risk_level: str = Field(default="Low") # Very Low -> Very High
     status: str = Field(default="Pending") # Pending, Reviewed, Dismissed
-    assigned_queue: str = Field(default="General")
+    assigned_queue: Optional[str] = "General Queue"
+    explanation: Optional[str] = None # AI-generated explanation
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     class Settings:
@@ -76,3 +77,36 @@ class SAR(Document):
 
     class Settings:
         name = "sars"
+
+class AnalysisResult(Document):
+    model_name: str # decision_tree, naive_bayes, etc.
+    accuracy: float
+    feature_importance: Optional[Dict[str, float]] = None
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "analysis_results"
+
+class AnalysisTrend(Document):
+    categories: List[str]
+    fraud_by_category: List[float]
+    top_features: List[Dict[str, Any]]
+    risk_distribution: List[Dict[str, Any]]
+    logic_insights: List[Dict[str, Any]]
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "analysis_trends"
+
+class Report(Document):
+    report_type: str
+    period_start: datetime
+    period_end: datetime
+    summary: Dict[str, Any]
+    case_status_breakdown: Dict[str, Any]
+    risk_level_breakdown: Dict[str, Any]
+    executive_summary: Optional[str] = None
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "reports"

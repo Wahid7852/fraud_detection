@@ -59,11 +59,10 @@ export const Sidebar = () => {
       <div className="p-4 border-t border-slate-800">
         <div className="flex items-center">
           <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold uppercase">
-            WK
+            GR
           </div>
           <div className="ml-3">
-            <p className="text-sm font-medium">Wahid Khan</p>
-            <p className="text-xs text-slate-400">Senior Analyst</p>
+            <p className="text-sm font-medium">Gayathri R.</p>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from typing import List
 
 from app.db.session import init_db
@@ -66,6 +67,14 @@ app.add_middleware(
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy", "message": "Backend API is running"}
+
+@app.get("/api/docs", include_in_schema=False)
+async def api_docs_redirect():
+    return RedirectResponse(url="/docs")
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return {"message": "Not found"}
 
 app.include_router(api_router, prefix="/api")
 

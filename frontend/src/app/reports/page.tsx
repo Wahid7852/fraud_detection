@@ -26,6 +26,11 @@ export default function ReportsPage() {
     queryFn: reportService.getStats,
   });
 
+  const { data: recentReports } = useQuery({
+    queryKey: ['recent-reports'],
+    queryFn: () => reportService.getReports({ limit: 5 }),
+  });
+
   const { data: trends } = useQuery({
     queryKey: ['report-trends', dateRange],
     queryFn: () => {
@@ -150,6 +155,49 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {recentReports && recentReports.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-slate-900">Recently Generated Reports</h3>
+            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">Instant Fetch Enabled</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentReports.map((report: any) => (
+              <div key={report._id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-blue-200 transition-all group cursor-pointer"
+                onClick={() => {
+                  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `cached_${report.report_type}_${new Date(report.generated_at).toISOString().split('T')[0]}.json`;
+                  link.click();
+                }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="rounded-lg bg-blue-100 p-2">
+                    <BarChart3 className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <span className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded">
+                    {report.report_type}
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 mb-1 capitalize">
+                  {report.report_type.replace('_', ' ')} Report
+                </h4>
+                <p className="text-xs text-slate-500 mb-3">
+                  {new Date(report.period_start).toLocaleDateString()} - {new Date(report.period_end).toLocaleDateString()}
+                </p>
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <span className="text-[10px] text-slate-400">
+                    Generated {new Date(report.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <Download className="h-3 w-3 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Avg Fraud Score', value: stats?.avg_fraud_score?.toFixed(1) || '42.5', trend: '+2.1%', up: true },
@@ -240,22 +288,6 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center bg-gradient-to-b from-white to-slate-50/50">
-        <div className="mx-auto w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
-          <BarChart3 className="h-8 w-8 text-blue-500" />
-        </div>
-        <h3 className="text-xl font-bold text-slate-900">Custom Analytics Builder</h3>
-        <p className="text-slate-500 max-w-lg mx-auto mt-2">
-          Drag and drop fields to create custom visualizations. Export data in PDF, XLSX, or JSON formats for external analysis.
-        </p>
-        <button 
-          onClick={handleAddWidget}
-          className="mt-6 rounded-xl border-2 border-dashed border-slate-300 px-8 py-3 text-sm font-bold text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all group"
-        >
-          <Plus className="inline-block mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-          Add New Visualization Widget
-        </button>
-      </div>
     </div>
   );
 }

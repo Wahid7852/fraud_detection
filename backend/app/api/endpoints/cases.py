@@ -16,7 +16,7 @@ class CaseNoteCreate(BaseModel):
     note: str
     analyst_id: int
 
-@router.get("/", response_model=List[CaseSchema])
+@router.get("", response_model=List[CaseSchema])
 async def get_cases(
     status: Optional[str] = None,
     analyst_id: Optional[int] = None,
@@ -31,16 +31,30 @@ async def get_cases(
     
     cases = await Case.find(query).to_list()
     
-    # Fetch related data
+    if not cases:
+        return []
+
+    # Bulk fetch alerts
+    alert_ids = [c.alert.ref.id for c in cases if c.alert]
+    alerts = await Alert.find({"_id": {"$in": alert_ids}}).to_list()
+    alert_map = {a.id: a for a in alerts}
+    
+    # Bulk fetch transactions for those alerts
+    transaction_ids = [a.transaction.ref.id for a in alerts if a.transaction]
+    transactions = await Transaction.find({"_id": {"$in": transaction_ids}}).to_list()
+    trans_map = {t.id: t for t in transactions}
+    
+    # Fetch notes in bulk if needed, but notes are usually few
+    # For now, let's just assemble cases
     for case in cases:
         if case.alert:
-            alert = await Alert.get(case.alert.ref.id)
+            alert = alert_map.get(case.alert.ref.id)
             if alert:
                 if alert.transaction:
-                    alert.transaction = await Transaction.get(alert.transaction.ref.id)
+                    alert.transaction = trans_map.get(alert.transaction.ref.id)
                 case.alert = alert
         
-        # Fetch notes
+        # Notes are still fetched per case because they are unique to the case
         if case.notes:
             case.notes = [await CaseNote.get(note.ref.id) for note in case.notes if note.ref]
     
@@ -66,11 +80,20 @@ async def get_case(case_id: str):
     if case.alert:
         alert = await Alert.get(case.alert.ref.id)
         if alert:
-            case.alert = alert
+            # Fetch transaction if it exists (check if it's a Link object)
             if alert.transaction:
-                transaction = await Transaction.get(alert.transaction.ref.id)
-                if transaction:
-                    alert.transaction = transaction
+                try:
+                    if hasattr(alert.transaction, 'ref'):
+                        transaction = await Transaction.get(alert.transaction.ref.id)
+                    else:
+                        transaction = alert.transaction
+                    if transaction:
+                        alert.transaction = transaction
+                    else:
+                        alert.transaction = None
+                except Exception:
+                    alert.transaction = None
+            case.alert = alert
     
     # Fetch all notes
     if case.notes:
@@ -97,15 +120,38 @@ async def update_case(case_id: str, update: CaseUpdate):
     if case.alert:
         alert = await Alert.get(case.alert.ref.id)
         if alert:
-            case.alert = alert
+            # Fetch transaction if it exists (check if it's a Link object)
             if alert.transaction:
-                transaction = await Transaction.get(alert.transaction.ref.id)
-                if transaction:
-                    alert.transaction = transaction
+                try:
+                    # Check if it's a Link object (has 'ref' attribute)
+                    if hasattr(alert.transaction, 'ref'):
+                        transaction = await Transaction.get(alert.transaction.ref.id)
+                    else:
+                        # Already a Transaction object
+                        transaction = alert.transaction
+                    
+                    if transaction:
+                        alert.transaction = transaction
+                    else:
+                        alert.transaction = None
+                except Exception as e:
+                    # If transaction fetch fails, set to None
+                    print(f"Error fetching transaction: {e}")
+                    alert.transaction = None
+            case.alert = alert
     
     # Fetch notes if any
     if case.notes:
-        case.notes = [await CaseNote.get(note.ref.id) for note in case.notes if note.ref]
+        fetched_notes = []
+        for note in case.notes:
+            if note.ref:
+                try:
+                    fetched_note = await CaseNote.get(note.ref.id)
+                    if fetched_note:
+                        fetched_notes.append(fetched_note)
+                except Exception:
+                    continue
+        case.notes = fetched_notes
     
     return CaseSchema.model_validate(case)
 
@@ -148,10 +194,19 @@ async def assign_analyst(case_id: str, analyst_id: int = Body(...)):
     if case.alert:
         alert = await Alert.get(case.alert.ref.id)
         if alert:
-            case.alert = alert
+            # Fetch transaction if it exists (check if it's a Link object)
             if alert.transaction:
-                transaction = await Transaction.get(alert.transaction.ref.id)
-                if transaction:
-                    alert.transaction = transaction
+                try:
+                    if hasattr(alert.transaction, 'ref'):
+                        transaction = await Transaction.get(alert.transaction.ref.id)
+                    else:
+                        transaction = alert.transaction
+                    if transaction:
+                        alert.transaction = transaction
+                    else:
+                        alert.transaction = None
+                except Exception:
+                    alert.transaction = None
+            case.alert = alert
     
     return CaseSchema.model_validate(case)

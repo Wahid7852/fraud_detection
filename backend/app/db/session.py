@@ -18,7 +18,7 @@ async def init_db():
     client = AsyncIOMotorClient(MONGODB_URI)
     
     # Import models here to avoid circular imports
-    from app.models.models import Transaction, Alert, Case, CaseNote, Rule, SAR
+    from app.models.models import Transaction, Alert, Case, CaseNote, Rule, SAR, AnalysisResult, AnalysisTrend
     
     # Initialize beanie with document models in dependency order
     await init_beanie(
@@ -29,6 +29,8 @@ async def init_db():
             Alert,
             Case,
             Rule,
-            SAR
+            SAR,
+            AnalysisResult,
+            AnalysisTrend
         ]
     )

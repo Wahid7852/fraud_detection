@@ -5,12 +5,12 @@ from app.schemas.schemas import Rule as RuleSchema, RuleBase
 
 router = APIRouter()
 
-@router.get("/", response_model=List[RuleSchema])
+@router.get("", response_model=List[RuleSchema])
 async def get_rules():
     rules = await Rule.find_all().to_list()
     return [RuleSchema.model_validate(r) for r in rules]
 
-@router.post("/", response_model=RuleSchema)
+@router.post("", response_model=RuleSchema)
 async def create_rule(rule: RuleBase):
     db_rule = Rule(**rule.dict())
     await db_rule.insert()

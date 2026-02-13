@@ -39,6 +39,7 @@ export const analysisService = {
 
 export const reportService = {
   getTemplates: () => api.get('/reports/templates').then(res => res.data),
+  getReports: (params?: any) => api.get('/reports/list', { params }).then(res => res.data),
   generateReport: (data: any) => api.post('/reports/generate', data).then(res => res.data),
   getTrends: (params?: any) => api.get('/reports/trends', { params }).then(res => res.data),
   getStats: () => api.get('/reports/stats').then(res => res.data),

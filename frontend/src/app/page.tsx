@@ -11,7 +11,15 @@ export default function Home() {
   const { data: alerts, isLoading } = useQuery({
     queryKey: ['recent-alerts'],
     queryFn: () => alertService.getAlerts(),
-    select: (data) => data.slice(0, 5).sort((a: any, b: any) => b.risk_score - a.risk_score)
+    select: (data) => {
+      // Filter out alerts with $0 or missing transactions, then sort and take top 5
+      const validAlerts = data.filter((a: any) => 
+        a.transaction && 
+        a.transaction.amount && 
+        a.transaction.amount > 0
+      );
+      return validAlerts.slice(0, 5).sort((a: any, b: any) => b.risk_score - a.risk_score);
+    }
   });
 
   const getRiskBadge = (score: number) => {

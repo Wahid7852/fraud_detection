@@ -17,7 +17,7 @@ class SARUpdate(BaseModel):
     status: Optional[str] = None
     filing_date: Optional[datetime] = None
 
-@router.get("/")
+@router.get("")
 async def get_sars(
     status: Optional[str] = None,
     search: Optional[str] = None,
@@ -31,22 +31,36 @@ async def get_sars(
     
     sars = await SAR.find(query).skip(skip).limit(limit).to_list()
     
-    # Fetch case data
+    if not sars:
+        return []
+
+    # Bulk fetch cases
+    case_ids = [s.case.ref.id for s in sars if s.case]
+    cases = await Case.find({"_id": {"$in": case_ids}}).to_list()
+    case_map = {c.id: c for c in cases}
+    
+    # Bulk fetch alerts for these cases
+    alert_ids = [c.alert.ref.id for c in cases if c.alert]
+    alerts = await Alert.find({"_id": {"$in": alert_ids}}).to_list()
+    alert_map = {a.id: a for a in alerts}
+    
+    # Bulk fetch transactions for these alerts
+    transaction_ids = [a.transaction.ref.id for a in alerts if a.transaction]
+    transactions = await Transaction.find({"_id": {"$in": transaction_ids}}).to_list()
+    trans_map = {t.id: t for t in transactions}
+    
+    # Assemble
     for sar in sars:
         if sar.case:
-            case = await Case.get(sar.case.ref.id)
+            case = case_map.get(sar.case.ref.id)
             if case:
-                sar.case = case
                 if case.alert:
-                    alert = await Alert.get(case.alert.ref.id)
+                    alert = alert_map.get(case.alert.ref.id)
                     if alert:
-                        case.alert = alert
                         if alert.transaction:
-                            transaction = await Transaction.get(alert.transaction.ref.id)
-                            if transaction:
-                                alert.transaction = transaction
-    
-    # Apply search filter
+                            alert.transaction = trans_map.get(alert.transaction.ref.id)
+                        case.alert = alert
+                sar.case = case
     if search:
         search_lower = search.lower()
         sars = [
